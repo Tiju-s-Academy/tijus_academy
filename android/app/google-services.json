@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "525304577839",
+    "project_id": "tiju-s-elearn",
+    "storage_bucket": "tiju-s-elearn.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:525304577839:android:88622c9c7a0c1695c02bda",
+        "android_client_info": {
+          "package_name": "com.example.tijus_academy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaUaup5BWnlaURDpGPpZSUHO7buBlrOAM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
