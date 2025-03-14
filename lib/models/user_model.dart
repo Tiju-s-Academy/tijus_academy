@@ -3,12 +3,13 @@ class User {
   final String name;
   final String email;
   final String? authToken;
-
+  final String? phoneNumber;
   User({
     required this.id,
     required this.name,
     required this.email,
     this.authToken,
+    this.phoneNumber,
   });
 
   /// Creates a User from a Map (JSON)
@@ -18,6 +19,7 @@ class User {
       name: map['name'] ?? '',
       email: map['email'] ?? '',
       authToken: map['authToken'],
+      phoneNumber: map['phoneNumber'],
     );
   }
 
@@ -28,6 +30,7 @@ class User {
       'name': name,
       'email': email,
       'authToken': authToken,
+      'phoneNumber': phoneNumber,
     };
   }
 
@@ -37,18 +40,20 @@ class User {
     String? name,
     String? email,
     String? authToken,
+    String? phoneNumber,
   }) {
     return User(
       id: id ?? this.id,
       name: name ?? this.name,
       email: email ?? this.email,
       authToken: authToken ?? this.authToken,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
     );
   }
 
   @override
   String toString() {
-    return 'User(id: $id, name: $name, email: $email, authToken: $authToken)';
+    return 'User(id: $id, name: $name, email: $email, authToken: $authToken, phoneNumber: $phoneNumber)';
   }
 }
 

@@ -19,7 +19,7 @@ class AuthService {
   static const String _authTokenKey = 'auth_token';
   
   // Register a new user with email and password
-  Future<app.User?> register(String email, String password, String name) async {
+  Future<app.User?> register(String email, String password, String name, String phoneNumber) async {
     try {
       // Create user in Firebase
       final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
@@ -35,13 +35,14 @@ class AuthService {
       
       if (userCredential.user != null) {
         // Create app user model
+        // Create app user model
         final app.User user = app.User(
           id: userCredential.user!.uid,
           email: email,
           name: name,
+          phoneNumber: phoneNumber,
           authToken: token,
         );
-        
         // Save user data to SharedPreferences
         await saveUserToPrefs(user);
         

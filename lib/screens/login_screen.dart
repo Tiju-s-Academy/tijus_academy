@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   
   bool _isLoading = false;
   String? _errorMessage;
@@ -26,6 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -57,6 +59,21 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _validateName(String? value) {
     if (!_isLoginMode && (value == null || value.isEmpty)) {
       return 'Name is required';
+    }
+    return null;
+  }
+
+  // Phone validation
+  String? _validatePhone(String? value) {
+    if (!_isLoginMode && (value == null || value.isEmpty)) {
+      return 'Phone number is required';
+    }
+    // Basic phone validation - at least 10 digits
+    if (!_isLoginMode && value != null) {
+      final phoneRegex = RegExp(r'^\+?[\d\s-]{10,15}$');
+      if (!phoneRegex.hasMatch(value.replaceAll(RegExp(r'\s+'), ''))) {
+        return 'Enter a valid phone number';
+      }
     }
     return null;
   }
@@ -104,6 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _emailController.text.trim(),
           _passwordController.text,
           _nameController.text.trim(),
+          _phoneController.text.trim(),
         );
         // Registration successful - should either navigate to home or show a verification message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -177,6 +195,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         validator: _validateName,
                         enabled: !_isLoading,
                         textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Phone field
+                      TextFormField(
+                        controller: _phoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone Number',
+                          prefixIcon: Icon(Icons.phone),
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.phone,
+                        validator: _validatePhone,
+                        enabled: !_isLoading,
                       ),
                       const SizedBox(height: 16),
                     ],

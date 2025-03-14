@@ -28,8 +28,8 @@ class AuthStateProvider extends ChangeNotifier {
     await _checkAuthState();
   }
 
-  Future<void> register(String email, String password, String name) async {
-    await _authService.register(email, password, name);
+  Future<void> register(String email, String password, String name, String phoneNumber) async {
+    await _authService.register(email, password, name, phoneNumber);
     await _checkAuthState();
   }
 
