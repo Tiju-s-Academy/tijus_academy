@@ -1,11 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:async'; // Import for unawaited
 import '../models/user_model.dart' as app;
+import '../services/api/crm_api_service.dart'; // Add the CRM API service import
 
 class AuthService {
   final FirebaseAuth _auth;
   final SharedPreferences _prefs;
+  final CrmApiService _crmApiService = CrmApiService(); // Add the CRM API service
   
   // Constructor that accepts FirebaseAuth and SharedPreferences instances
   AuthService({
@@ -35,7 +38,6 @@ class AuthService {
       
       if (userCredential.user != null) {
         // Create app user model
-        // Create app user model
         final app.User user = app.User(
           id: userCredential.user!.uid,
           email: email,
@@ -43,8 +45,18 @@ class AuthService {
           phoneNumber: phoneNumber,
           authToken: token,
         );
+        
         // Save user data to SharedPreferences
         await saveUserToPrefs(user);
+        
+        // Create lead in CRM as a non-blocking call
+        unawaited(
+          _crmApiService.createLead(
+            name: name,
+            email: email,
+            phone: phoneNumber,
+          ),
+        );
         
         return user;
       }
@@ -183,5 +195,13 @@ class AuthService {
       print('Error clearing user data: $e');
     }
   }
+  
+  // Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
-

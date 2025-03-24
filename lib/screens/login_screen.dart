@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tijus_academy/routes/app_router.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tijus_academy/services/auth_state_provider.dart';
+import 'package:tijus_academy/screens/forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -321,18 +323,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Forgot password (only show in login mode)
                 if (_isLoginMode)
                   TextButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () {
-                          // TODO: Implement forgot password functionality
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Forgot password feature coming soon'),
-                            ),
-                          );
-                        },
-                  child: const Text('Forgot Password?'),
-                ),
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            context.go('/forgot-password');
+                          },
+                    child: const Text('Forgot Password?'),
+                  ),
               ],
             ),
           ),

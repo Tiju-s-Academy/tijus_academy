@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'screens/splash_screen.dart';
+import 'services/api/crm_api_service.dart';
 
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
@@ -116,18 +119,73 @@ void main() async {
     
     // Run the app
     debugPrint('Starting main application UI...');
-    runApp(MyApp(
-      router: appRouter.router,
-      authStateProvider: appRouter.authStateProvider,
-    ));
-    debugPrint('Application started successfully');
+    
+    // Create the CRM API service
+    final crmApiService = CrmApiService();
+    debugPrint('CRM API service initialized');
+    
+    // Create a completer to track the app initialization process
+    final appInitCompleter = Completer<void>();
+    
+    // Run the app with splash screen
+    runApp(
+      AppWithSplash(
+        initializationFuture: appInitCompleter.future,
+        appServices: Provider<CrmApiService>.value(
+          value: crmApiService,
+          child: MyApp(
+            router: appRouter.router, 
+            authStateProvider: appRouter.authStateProvider,
+          ),
+        ),
+      ),
+    );
+    
+    // Delay completion slightly to ensure splash screen animations have time to start
+    Future.delayed(const Duration(milliseconds: 200), () {
+    
+      // Mark initialization as complete
+      appInitCompleter.complete();
+      debugPrint('Application started successfully');
+    });
   } catch (e) {
     debugPrint('Failed to initialize the application: $e');
     // Fall back to error screen
     runApp(const ErrorApp());
   }
+  
+  debugPrint('Application initialization completed');
+}
+/// Wrapper widget that handles the splash screen transition
+class AppWithSplash extends StatelessWidget {
+  final Future<void> initializationFuture;
+  final Widget appServices;
+  
+  const AppWithSplash({
+    Key? key,
+    required this.initializationFuture,
+    required this.appServices,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Tijus Academy',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      home: SplashScreen(
+        initializationFuture: initializationFuture,
+        nextScreen: appServices,
+      ),
+    );
+  }
 }
 
+/// The main app widget that configures the router and theme
 class MyApp extends StatelessWidget {
   final GoRouter router;
   final AuthStateProvider authStateProvider;

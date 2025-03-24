@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "tijus_academy" "\0"
+            VALUE "FileDescription", "Tiju's Academy" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "tijus_academy" "\0"
+            VALUE "InternalName", "Tiju's Academy" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "tijus_academy.exe" "\0"
-            VALUE "ProductName", "tijus_academy" "\0"
+            VALUE "OriginalFilename", "Tiju's Academy.exe" "\0"
+            VALUE "ProductName", "Tiju's Academy" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

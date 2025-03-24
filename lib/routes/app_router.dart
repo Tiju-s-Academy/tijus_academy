@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tijus_academy/screens/home_screen.dart';
 import 'package:tijus_academy/screens/login_screen.dart';
+import 'package:tijus_academy/screens/forgot_password_screen.dart';
+import 'package:tijus_academy/screens/crm_test_screen.dart';
 import 'package:tijus_academy/services/auth_service.dart';
 import 'package:tijus_academy/services/auth_state_provider.dart';
 
@@ -28,6 +30,16 @@ class AppRouter {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
+        path: '/forgot-password',
+        name: 'forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/crm-test',
+        name: 'crm-test',
+        builder: (context, state) => const CrmTestScreen(),
+      ),
+      GoRoute(
         path: '/',
         name: 'home',
         builder: (context, state) => const HomeScreen(),
@@ -38,17 +50,18 @@ class AppRouter {
       final bool isLoggedIn = authStateProvider.isLoggedIn;
       final bool isLoading = authStateProvider.isLoading;
       final bool isGoingToLogin = state.matchedLocation == '/login';
+      final bool isGoingToCrmTest = state.matchedLocation == '/crm-test';
+      final bool isGoingToForgotPassword = state.matchedLocation == '/forgot-password';
 
       // If still loading, don't redirect yet
       if (isLoading) {
         return null;
       }
 
-      // If not logged in and not going to login, redirect to login
-      if (!isLoggedIn && !isGoingToLogin) {
+      // If not logged in and not going to login, CRM test, or forgot password, redirect to login
+      if (!isLoggedIn && !isGoingToLogin && !isGoingToCrmTest && !isGoingToForgotPassword) {
         return '/login';
       }
-
       // If logged in and going to login, redirect to home
       if (isLoggedIn && isGoingToLogin) {
         return '/';
