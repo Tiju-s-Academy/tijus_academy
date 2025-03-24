@@ -18,7 +18,8 @@ import 'models/user_model.dart' as app;
 // Track Firebase initialization status globally
 bool _firebaseInitialized = false;
 
-void main() async {
+void main() {
+  // Initialize Flutter binding but don't await any async operations yet
   WidgetsFlutterBinding.ensureInitialized();
   
   // Set up error handling for the entire app
@@ -27,149 +28,9 @@ void main() async {
     debugPrint('FlutterError: ${details.exception}');
   };
   
-  debugPrint('Starting app initialization...');
-  
-  // Initialize shared preferences
-  debugPrint('Initializing SharedPreferences...');
-  final prefs = await SharedPreferences.getInstance();
-  debugPrint('SharedPreferences initialized successfully');
-  
-  late final AuthService authService;
-  bool canUseFirebase = false;
-  
-  // Only try to initialize Firebase once
-  if (!_firebaseInitialized) {
-    try {
-      debugPrint('Attempting to initialize Firebase...');
-      
-      // Check if Firebase is already initialized
-      if (Firebase.apps.isNotEmpty) {
-        debugPrint('Firebase already initialized, using existing instance');
-        canUseFirebase = true;
-        _firebaseInitialized = true;
-      } else {
-        // Attempt to initialize Firebase
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-        
-        // If we get here, Firebase initialization succeeded
-        canUseFirebase = true;
-        _firebaseInitialized = true;
-        debugPrint('Firebase initialized successfully with default options');
-      }
-    } catch (e, stackTrace) {
-      // Detailed error logging
-      debugPrint('Firebase initialization failed with error: $e');
-      debugPrint('Error details: ${e.toString()}');
-      debugPrint('Stack trace: $stackTrace');
-      
-      // Try again with a fallback approach if possible
-      try {
-        debugPrint('Attempting Firebase initialization with fallback...');
-        await Firebase.initializeApp();
-        canUseFirebase = true;
-        _firebaseInitialized = true;
-        debugPrint('Firebase initialized with fallback approach');
-      } catch (fallbackError) {
-        debugPrint('Fallback Firebase initialization also failed: $fallbackError');
-        canUseFirebase = false;
-      }
-    }
-  } else {
-    debugPrint('Using previously initialized Firebase instance');
-    canUseFirebase = true;
-  }
-  
-  if (canUseFirebase) {
-    try {
-      debugPrint('Setting up Firebase Authentication...');
-      // Use real Firebase authentication
-      authService = AuthService(
-        auth: FirebaseAuth.instance,
-        prefs: prefs,
-      );
-      debugPrint('Firebase Authentication service initialized successfully');
-    } catch (authError) {
-      debugPrint('Failed to initialize Firebase Authentication: $authError');
-      debugPrint('Falling back to demo authentication mode');
-      
-      // Create a demo auth service as fallback
-      authService = createDemoAuthService(prefs);
-      
-      // Create a demo user
-      await setupDemoUser(authService, prefs);
-      debugPrint('Demo authentication mode activated due to auth service failure');
-    }
-  } else {
-    debugPrint('Firebase unavailable, setting up demo authentication mode');
-    // Create a demo auth service
-    authService = createDemoAuthService(prefs);
-    
-    // Create a demo user
-    await setupDemoUser(authService, prefs);
-    debugPrint('Using demo mode with local authentication');
-  }
-  
-  try {
-    debugPrint('Initializing app router...');
-    // Initialize the router
-    final appRouter = AppRouter(authService: authService);
-    debugPrint('Router initialized successfully');
-    
-    // Run the app
-    debugPrint('Starting main application UI...');
-    
-    // Create the CRM API service
-    final crmApiService = CrmApiService();
-    debugPrint('CRM API service initialized');
-    
-    // Create a completer to track the app initialization process
-    final appInitCompleter = Completer<void>();
-    
-    // Run the app with splash screen
-    runApp(
-      AppWithSplash(
-        initializationFuture: appInitCompleter.future,
-        appServices: Provider<CrmApiService>.value(
-          value: crmApiService,
-          child: MyApp(
-            router: appRouter.router, 
-            authStateProvider: appRouter.authStateProvider,
-          ),
-        ),
-      ),
-    );
-    
-    // Delay completion slightly to ensure splash screen animations have time to start
-    Future.delayed(const Duration(milliseconds: 200), () {
-    
-      // Mark initialization as complete
-      appInitCompleter.complete();
-      debugPrint('Application started successfully');
-    });
-  } catch (e) {
-    debugPrint('Failed to initialize the application: $e');
-    // Fall back to error screen
-    runApp(const ErrorApp());
-  }
-  
-  debugPrint('Application initialization completed');
-}
-/// Wrapper widget that handles the splash screen transition
-class AppWithSplash extends StatelessWidget {
-  final Future<void> initializationFuture;
-  final Widget appServices;
-  
-  const AppWithSplash({
-    Key? key,
-    required this.initializationFuture,
-    required this.appServices,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  // Show splash screen immediately before performing any initialization
+  runApp(
+    MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Tijus Academy',
       theme: ThemeData(
@@ -178,13 +39,128 @@ class AppWithSplash extends StatelessWidget {
         useMaterial3: true,
       ),
       home: SplashScreen(
-        initializationFuture: initializationFuture,
-        nextScreen: appServices,
+        initializationFuture: _initializeApp(),
+        nextScreen: MyAppLoader(),
       ),
+    ),
+  );
+}
+
+// Widget that loads the actual app after initialization is complete
+class MyAppLoader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Widget>(
+      future: _buildInitializedApp(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+          return snapshot.data!;
+        }
+        
+        // Show error screen if initialization failed
+        if (snapshot.hasError) {
+          return ErrorApp();
+        }
+        
+        // This should rarely be visible as the splash screen should cover this loading period
+        return Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
     );
   }
 }
 
+// This initializes the app and returns a Future that completes when the initialization is done
+Future<void> _initializeApp() async {
+  // Adding minimal delay to ensure the splash screen is displayed
+  // This could be removed but helps ensure the splash screen animation starts
+  await Future.delayed(Duration(milliseconds: 50));
+  
+  try {
+    // We don't need to do anything here as the actual initialization happens in _buildInitializedApp
+    // This Future.delayed just ensures the splash screen shows for at least 1 second
+    await Future.delayed(Duration(seconds: 1));
+  } catch (e) {
+    debugPrint('Error during app init: $e');
+    // Still complete the future even with an error so splash screen can transition
+  }
+}
+
+// Performs the actual app initialization and builds the main app widget
+Future<Widget> _buildInitializedApp() async {
+  try {
+    // Initialize shared preferences
+    debugPrint('Initializing SharedPreferences...');
+    final prefs = await SharedPreferences.getInstance();
+    debugPrint('SharedPreferences initialized successfully');
+    
+    late final AuthService authService;
+    bool canUseFirebase = false;
+    
+    // Initialize Firebase
+    if (!_firebaseInitialized) {
+      try {
+        if (Firebase.apps.isNotEmpty) {
+          canUseFirebase = true;
+          _firebaseInitialized = true;
+        } else {
+          await Firebase.initializeApp(
+            options: DefaultFirebaseOptions.currentPlatform,
+          );
+          canUseFirebase = true;
+          _firebaseInitialized = true;
+        }
+      } catch (e) {
+        try {
+          await Firebase.initializeApp();
+          canUseFirebase = true;
+          _firebaseInitialized = true;
+        } catch (fallbackError) {
+          canUseFirebase = false;
+        }
+      }
+    } else {
+      canUseFirebase = true;
+    }
+    
+    // Initialize auth service
+    if (canUseFirebase) {
+      try {
+        authService = AuthService(
+          auth: FirebaseAuth.instance,
+          prefs: prefs,
+        );
+      } catch (authError) {
+        authService = createDemoAuthService(prefs);
+        await setupDemoUser(authService, prefs);
+      }
+    } else {
+      authService = createDemoAuthService(prefs);
+      await setupDemoUser(authService, prefs);
+    }
+    
+    // Initialize router
+    final appRouter = AppRouter(authService: authService);
+    
+    // Initialize API service
+    final crmApiService = CrmApiService();
+    
+    // Return the fully initialized app widget
+    return Provider<CrmApiService>.value(
+      value: crmApiService,
+      child: MyApp(
+        router: appRouter.router,
+        authStateProvider: appRouter.authStateProvider,
+      ),
+    );
+  } catch (e) {
+    debugPrint('Failed to initialize application: $e');
+    return const ErrorApp();
+  }
+}
 /// The main app widget that configures the router and theme
 class MyApp extends StatelessWidget {
   final GoRouter router;
@@ -379,7 +355,6 @@ class DemoFirebaseAuth implements FirebaseAuth {
     return null;
   }
 }
-
 /// A minimal implementation of User for demo mode
 class DemoUser implements User {
   final String _uid;
