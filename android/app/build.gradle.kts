@@ -38,6 +38,25 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
+            // Keep rules for Google Play Core library
+            val keepRules = listOf(
+                "-dontwarn com.google.android.play.core.splitcompat.SplitCompatApplication",
+                "-dontwarn com.google.android.play.core.splitinstall.SplitInstallException",
+                "-dontwarn com.google.android.play.core.splitinstall.SplitInstallManager",
+                "-dontwarn com.google.android.play.core.splitinstall.SplitInstallManagerFactory",
+                "-dontwarn com.google.android.play.core.splitinstall.SplitInstallRequest\$Builder",
+                "-dontwarn com.google.android.play.core.splitinstall.SplitInstallRequest",
+                "-dontwarn com.google.android.play.core.splitinstall.SplitInstallSessionState",
+                "-dontwarn com.google.android.play.core.splitinstall.SplitInstallStateUpdatedListener",
+                "-dontwarn com.google.android.play.core.tasks.OnFailureListener",
+                "-dontwarn com.google.android.play.core.tasks.OnSuccessListener",
+                "-dontwarn com.google.android.play.core.tasks.Task",
+            )
+            keepRules.forEach {
+                 proguardFile.writeText(it + "\\n")
+            }
         }
     }
 }
