@@ -23,21 +23,21 @@
           _nameController.text.trim(),
           _phoneController.text.trim(),
         );
-                      const SizedBox(height: 16),
+                      SizedBox(height = 16),
                       
                       // Phone number field
                       TextFormField(
-                        controller: _phoneController,
-                        decoration: const InputDecoration(
+                        controller = _phoneController,
+                        decoration = const InputDecoration(
                           labelText: 'Phone Number',
                           prefixIcon: Icon(Icons.phone),
                           border: OutlineInputBorder(),
                         ),
-                        keyboardType: TextInputType.phone,
-                        validator: _validatePhone,
-                        enabled: !_isLoading,
+                        keyboardType = TextInputType.phone,
+                        validator = _validatePhone,
+                        enabled = !_isLoading,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height = 16),
                     ],
                   ),
                 
