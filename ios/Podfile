@@ -1,0 +1,157 @@
+platform :ios, '12.0'
+
+# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  # Use static frameworks to avoid duplicated symbols
+  use_frameworks! :linkage => :static
+  use_modular_headers!
+  
+  # Firebase pods with specific versions
+  pod 'Firebase/Core', '10.25.0', :modular_headers => true
+  pod 'Firebase/Auth', '10.25.0', :modular_headers => true
+  pod 'Firebase/Firestore', '10.25.0', :modular_headers => true
+  pod 'Firebase/Storage', '10.25.0', :modular_headers => true
+  pod 'Firebase/Analytics', '10.25.0', :modular_headers => true
+  pod 'Firebase/Messaging', '10.25.0', :modular_headers => true
+  pod 'GTMSessionFetcher', '3.5.0', :modular_headers => true
+  
+  # Additional Firebase dependencies
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseInstallations', :modular_headers => true
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'nanopb', :modular_headers => true
+  pod 'BoringSSL-GRPC', :modular_headers => true
+  
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+
+end
+
+pre_install do |installer|
+  # Disable transitive dependency validation for static frameworks
+  Pod::Installer::Xcode::TargetValidator.send(:define_method, :verify_no_static_framework_transitive_dependencies) {}
+  
+  # Prepare for Firebase modular imports
+  installer.pod_targets.each do |pod|
+    if pod.name.start_with?('Firebase') || pod.name.include?('firebase') || pod.name.include?('GTMSessionFetcher') || 
+       pod.name.include?('FirebaseCoreExtension') || pod.name.include?('FirebaseAppCheckInterop') || 
+       pod.name.include?('FirebaseAuthInterop') || pod.name.include?('FirebaseFirestoreInternal')
+      def pod.build_type
+        Pod::BuildType.static_library
+      end
+    end
+  end
+end
+
+post_install do |installer|
+  # Apply Flutter additional iOS build settings first
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+  end
+  
+  # Process all targets with organized configuration settings
+  installer.pods_project.targets.each do |target|
+    # Special handling for BoringSSL-GRPC file-level settings
+    if target.name == 'BoringSSL-GRPC' && target.respond_to?(:source_build_phase) && target.source_build_phase.respond_to?(:files)
+      puts "Processing file-specific settings for BoringSSL-GRPC"
+      target.source_build_phase.files.each do |file|
+        if file.respond_to?(:settings) && file.settings && file.settings['COMPILER_FLAGS']
+          file.settings['COMPILER_FLAGS'] = file.settings['COMPILER_FLAGS'].gsub('-G', '')
+        end
+      end
+    end
+    
+    # Apply build configuration settings for all targets
+    target.build_configurations.each do |config|
+      #---------------------------------------
+      # 1. Deployment Target Settings
+      #---------------------------------------
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 12.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      end
+      
+      #---------------------------------------
+      # 2. Code Signing Settings
+      #---------------------------------------
+      # Disable code signing for all builds (especially important for simulator)
+      config.build_settings['CODE_SIGNING_REQUIRED'] = "NO"
+      config.build_settings['CODE_SIGNING_ALLOWED'] = "NO"
+      config.build_settings['EXPANDED_CODE_SIGN_IDENTITY'] = ""
+      config.build_settings['CODE_SIGNING_IDENTITY'] = ""
+      
+      #---------------------------------------
+      # 3. Architecture Settings
+      #---------------------------------------
+      # Exclude arm64 for simulator builds
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
+      
+      #---------------------------------------
+      # 4. Compiler Settings
+      #---------------------------------------
+      # General compilation settings for all targets
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      
+      # Remove problematic compiler flags for all builds
+      ['OTHER_CFLAGS', 'OTHER_CXXFLAGS', 'COMPILER_FLAGS'].each do |setting|
+        if config.build_settings[setting]
+          config.build_settings[setting] = config.build_settings[setting].gsub('-G', '')
+        end
+      end
+      
+      #---------------------------------------
+      # 5. Target-Specific Settings
+      #---------------------------------------
+      # BoringSSL-GRPC specific settings
+      if target.name == 'BoringSSL-GRPC' || target.name.include?('BoringSSL')
+        # Fix xcconfig files for BoringSSL
+        if config.base_configuration_reference && config.base_configuration_reference.real_path
+          xcconfig_path = config.base_configuration_reference.real_path.to_s
+          if File.exist?(xcconfig_path)
+            xcconfig = File.read(xcconfig_path)
+            if xcconfig.include?('-G')
+              modified_xcconfig = xcconfig.gsub('-G', '')
+              File.write(xcconfig_path, modified_xcconfig)
+            end
+          end
+        end
+      end
+      
+      # Firebase specific settings
+      if target.name.start_with?('Firebase') || target.name.include?('firebase')
+        config.build_settings['HEADER_SEARCH_PATHS'] ||= ['$(inherited)']
+        config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= ['$(inherited)']
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'COCOAPODS=1'
+        config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+      end
+    end
+  end
+end
